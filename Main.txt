@@ -53,19 +53,7 @@ Pcm1ch:
         
         LD A,7              ;7
         OUT ($E4),A         ;11
-        
-BufAdr: LD A,(PcmBuf)       ;13
-        LD HL,BufAdr+1      ;10
-        INC (HL)            ;11
-        
-        LD H,TL>>8          ;7
-        LD L,A              ;4
-        
-        LD A,$40            ;7  OP1.TL
-        CALL SetTL          ;17+57
-        
-        LD A,$48            ;7  OP2.TL
-        CALL SetTL          ;17+57
+        ;90
         
         
 PcmAdr: LD HL,0             ;10
@@ -74,13 +62,26 @@ PcmAdr: LD HL,0             ;10
         JR Z,@F             ;7|12
         INC HL              ;6
         LD (PcmAdr+1),HL    ;16
-@:      
+@:      ;50
+        
+        LD H,TL>>8          ;7
+        LD L,A              ;4
+        ;11
+        
+        LD A,$40            ;7  OP1.TL
+        CALL SetTL          ;17+57
+        ;81
+        
+        LD A,$48            ;7  OP2.TL
+        CALL SetTL          ;17+57
+        ;81
+        
         
         POP HL              ;10
         POP AF              ;10
         EI                  ;4
         RET                 ;10
-        ;331(381)
+        ;34(347)
 
 
 
