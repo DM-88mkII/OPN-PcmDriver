@@ -83,11 +83,12 @@ Int Main                                             Sub
 
 
 1ch
-    9259Hz
-    7936Hz
+    11111Hz
+     9259Hz
+     7936Hz
 
 2ch
-    6944Hz
-    6172Hz
-    5555Hz
-    5050Hz
+     6944Hz
+     6172Hz
+     5555Hz
+     5050Hz
