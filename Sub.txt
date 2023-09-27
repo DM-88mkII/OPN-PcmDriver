@@ -1,0 +1,186 @@
+
+
+
+Cmd:
+		align $100
+Cmd0:	DW Exit				;Return BIOS
+Cmd1:	DW Nop				;
+Cmd2:	DW Put				;
+Cmd3:	DW Get				;
+
+Decomp:
+		align $100			;
+		DS $100				;H
+		DS $100				;L
+
+Lzc:
+		align $100			;
+		DS $100				;(n<<3)
+
+Frac:
+		align $100			;
+		DS $100				;H
+		DS $100				;L
+
+
+
+PcmMode:
+		DI					;4
+		PUSH AF				;11
+		PUSH BC				;11
+		PUSH DE				;11
+		PUSH HL				;11
+		IN A,($FE)			;11
+		PUSH AF				;11
+		
+		
+		LD A,%01110000		;7	Signal.on	%0111....
+		OUT ($FE),A			;11
+@:		
+		IN A,($FE)			;11
+		AND $0F				;7
+		CP (1<<1)			;7	Cmd.Nop
+		JR NZ,@B			;7|12
+		
+		XOR A				;4	Signal.off	%0000....
+		OUT ($FE),A			;12
+@:		
+		IN A,($FE)			;11
+		CP (1<<1)			;7	Cmd.Nop
+		JR NZ,@B			;7|12
+		
+Polling:
+		LD H,Cmd>>8			;7
+		LD C,$FE			;7
+Nop:	
+		IN L,(C)			;12
+		JP (HL)				;4
+		;16+16-1
+		
+Exit:	
+		POP AF				;10
+		OUT ($FE),A			;11
+		POP HL				;10
+		POP DE				;10
+		POP BC				;10
+		POP AF				;10
+		EI					;4
+		RET					;10
+
+
+
+Put:	;16+16-1
+		;Wait.(12=28-16)
+		RLC A				;8
+		NOP					;4
+		;12
+		
+		IN A,($FD)			;11	Get.Dat
+		LD (PcmA1+1),A		;13
+		IN A,($FC)			;11	Get.Dat
+		LD (PcmA2+1),A		;13
+		JP @F				;10
+@:		JP @F				;10
+@:		JP @F				;10
+@:		RLC A				;8
+		;86
+		
+		;Wait.18 + 28
+		JP @F				;10
+@:		RLC A				;8
+		JP @F				;10
+@:		JP @F				;10
+@:		RLC A				;8
+		;46
+		
+		IN A,($FD)			;11	Get.Dat
+		LD (PcmB1+1),A		;13
+		IN A,($FC)			;11	Get.Dat
+		LD (PcmB2+1),A		;13
+		;48(192=12+86+46+48)
+		
+		
+PcmA1:	LD B,0				;7
+PcmB1:	LD C,0				;7
+		CALL AddPcm			;17
+		LD (PcmX1q+1),A		;13
+		JP Polling			;10
+
+
+
+Get:	;16+16-1
+PcmX1:	LD A,0				;7
+		OUT ($FC),A			;11	Dat.Put	(18)
+PcmX2:	LD A,0				;7
+		OUT ($FD),A			;11	Dat.Put
+		;36
+		
+		
+PcmX1q:	LD A,0				;7
+		LD (PcmX1+1),A		;13
+		
+PcmA2:	LD B,0				;7
+PcmB2:	LD C,0				;7
+		CALL AddPcm			;17
+		LD (PcmX2+1),A		;13
+		JP Polling			;10
+
+
+
+;		Input
+;			B PcmA
+;			C PcmB
+;		Output
+;			A PcmX = PcmA + PcmB
+AddPcm:
+		LD H,Decomp>>8		;7
+		LD L,B				;7
+		LD D,(HL)			;7
+		INC H				;4
+		LD E,(HL)			;7	DE = PcmA16
+		
+		DEC H				;4
+		LD L,C				;7
+		LD B,(HL)			;7
+		INC H				;4
+		LD C,(HL)			;7	BC = PcmB16
+		EX DE,HL			;4	HL = PcmA16
+		ADD HL,BC			;11	HL = PcmX16 = PcmA16 + PcmB16
+		
+		LD A,H				;4
+		ADD A,A				;4
+		SBC A,A				;4	$00 or $FF
+		LD B,A				;4	B = Sign
+		JR Z,@F				;7|12
+Abs:	XOR A				;4	A = 0
+		SUB H				;4
+		LD H,A				;4
+		LD A,0				;7
+		SBC L				;4
+		LD L,A				;4	HL = Absolute(PcmX16)
+@:		
+		EX DE,HL			;4	DE = PcmX16
+		LD H,Lzc>>8			;7
+		LD A,D				;4
+		AND A				;4
+		JR Z,LzcL			;7|12
+LzcH:	LD L,D				;4
+		LD A,8<<3			;7
+		JP @F				;10
+LzcL:	LD L,E				;4
+		LD A,0				;7
+@:		ADD A,(HL)			;7
+		LD C,A				;4	C = Exponent
+		
+		LD H,Frac>>8		;7
+		LD L,D				;4
+		LD A,(HL)			;7
+		INC H				;4
+		LD L,E				;4
+		OR (HL)				;7	A = Fraction
+		OR C				;4	A = Exponent | Fraction
+		ADD A,A				;4
+		RLC B				;8
+		RRA					;4	A = PcmX = Sign | Exponent | Fraction
+		RET					;10
+		;247.WorstCase

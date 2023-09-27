@@ -1,0 +1,208 @@
+
+
+
+PcmBuf:
+		align $100			;
+		DS 256				;
+
+TL:
+		align $100			;
+OP1:	DS 256				;
+OP2:	DS 256				;
+
+
+
+EnterPcmMode:
+		PUSH AF				;11
+		
+		LD A,$0D			;Execute
+		CALL $37CC			;PutCommand
+		LD A,PcmMode>>8		;SubSystem
+		CALL $37D2			;PutData
+		LD A,PcmMode&$FF	;SubSystem
+		CALL $37D2			;PutData
+		
+@:		
+		IN A,($FE)			;11
+		AND $0F				;7
+		CP %00000111		;4	Sync.Signal.on
+		JR NZ,@B			;7|12
+		
+		LD A,(1<<5)			;7	Cmd.Nop
+		OUT ($FE),A			;11
+@:		
+		IN A,($FE)			;11
+		AND $0F				;7	Sync.Signal.off
+		JR NZ,@B			;7|12
+		
+		POP AF				;10
+		RET					;10
+
+
+
+Pcm1ch:
+		DI					;4
+		PUSH AF				;11
+		PUSH HL				;11
+		
+		LD A,$27			;7
+		OUT ($44),A			;11
+		JP @F				;10
+@:		LD A,%00010101		;7
+		OUT ($45),A			;11
+		
+		LD A,7				;7
+		OUT ($E4),A			;11
+		
+BufAdr:	LD A,(PcmBuf)		;13
+		LD HL,BufAdr+1		;10
+		INC (HL)			;11
+		
+		LD H,TL>>8			;7
+		LD L,A				;4
+		
+		LD A,$40			;7	OP1.TL
+		CALL SetTL			;17+57
+		
+		LD A,$48			;7	OP2.TL
+		CALL SetTL			;17+57
+		
+		
+PcmAdr:	LD HL,0				;10
+		LD A,(HL)			;7
+		OR A				;4
+		JR Z,@F				;7|12
+		INC HL				;6
+		LD (PcmAdr+1),HL	;16
+@:		
+		
+		POP HL				;10
+		POP AF				;10
+		EI					;4
+		RET					;10
+		;331(381)
+
+
+
+Pcm2ch:
+		DI					;4
+		PUSH AF				;11
+		PUSH HL				;11
+		
+		LD A,$27			;7
+		OUT ($44),A			;11
+		JP @F				;10
+@:		LD A,%00010101		;7
+		OUT ($45),A			;11
+		
+		LD A,7				;7
+		OUT ($E4),A			;11
+		
+BufAdr:	LD A,(PcmBuf)		;13
+		LD HL,BufAdr+1		;10
+		INC (HL)			;11
+		
+		LD H,TL>>8			;7
+		LD L,A				;4
+		
+		LD A,$40			;7	OP1.TL
+		CALL SetTL			;17+57
+		
+		LD A,$48			;7	OP2.TL
+		CALL SetTL			;17+57
+		;297
+		
+		
+Switch:	JR Get				;12	LD A,n;7
+		;12|7(309|304)
+		
+		
+Put:	;304
+		LD A,(2<<5)			;7	Cmd.Put
+		OUT ($FE),A			;11
+		;18
+		
+PcmAdrA:LD HL,0				;10
+		LD A,(HL)			;7
+		OUT ($FC),A			;11	Dat.Put	(28)
+		INC L				;4
+		LD A,(HL)			;7
+		OUT ($FD),A			;11	Dat.Put
+		OR A				;4
+		JP NZ,@F			;10
+		NOP					;4
+		RLC A				;8
+		JP SkipA			;10
+@:		INC HL				;6
+		LD (PcmAdrA+1),HL	;16
+SkipA:	;86
+		
+		LD A,(1<<5)			;7	Cmd.Nop
+		OUT ($FE),A			;11
+		;18
+		
+PcmAdrB:LD HL,0				;10
+		LD A,(HL)			;7
+		OUT ($FC),A			;11	Dat.Put	(28)
+		INC L				;4
+		LD A,(HL)			;7
+		OUT ($FD),A			;11	Dat.Put
+		OR A				;4
+		JP NZ,@F			;10
+		NOP					;4
+		RLC A				;8
+		JP SkipB			;10
+@:		INC HL				;6
+		LD (PcmAdrB+1),HL	;16
+SkipB:	;86
+		
+		LD A,Code_JR		;7
+		LD (Switch),A		;13
+		;20
+		
+		POP HL				;10
+		POP AF				;10
+		EI					;4
+		RET					;10
+		;34(566=304+18+86+18+86+20+34)
+		
+		
+Get:	;309
+		LD A,(3<<5)			;7	Cmd.Get
+		OUT ($FE),A			;11
+		;18
+		
+		;Wait.16-1 + 18
+		LD HL,(BufAdr+1)	;16
+		LD A,(1<<5)			;7	Cmd.Nop
+		OUT ($FE),A			;11
+		;34
+		
+		IN A,($FD)			;11	Dat.Get
+		LD (HL),A			;7
+		INC L				;4
+		IN A,($FC)			;11	Dat.Get
+		LD (HL),A			;7
+		;40
+		
+		LD A,Code_LD_A		;7
+		LD (Switch),A		;13
+		;20
+		
+		POP HL				;10
+		POP AF				;10
+		EI					;4
+		RET					;10
+		;34(455=309+18+34+40+20+34)
+
+
+
+SetTL:
+		OUT ($44),A			;11
+		JP @F				;10
+@:		LD A,(HL)			;7
+		OUT ($45),A			;11
+		INC H				;4
+		NOP					;4
+		RET					;10
+		;57
