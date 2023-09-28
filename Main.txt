@@ -42,8 +42,8 @@ EnterPcmMode:
 
 Pcm1ch:
         DI                  ;4
-        PUSH AF             ;11
-        PUSH HL             ;11
+        PUSH AF             ;11	EX AF,AF'.4
+        PUSH HL             ;11	EXX.4
         
         LD A,$27            ;7
         OUT ($44),A         ;11
@@ -77,18 +77,18 @@ PcmAdr: LD HL,0             ;10
         ;81
         
         
-        POP HL              ;10
-        POP AF              ;10
+        POP HL              ;10	EXX.4
+        POP AF              ;10	EX AF,AF'.4
         EI                  ;4
         RET                 ;10
-        ;34(347)
+        ;34(347:321)
 
 
 
 Pcm2ch:
         DI                  ;4
-        PUSH AF             ;11
-        PUSH HL             ;11
+        PUSH AF             ;11	EX AF,AF'.4
+        PUSH HL             ;11	EXX.4
         
         LD A,$27            ;7
         OUT ($44),A         ;11
@@ -155,11 +155,11 @@ PcmAdrB:LD HL,0             ;10
         LD (Switch),A       ;13
         ;20
         
-        POP HL              ;10
-        POP AF              ;10
+        POP HL              ;10	EXX.4
+        POP AF              ;10	EX AF,AF'.4
         EI                  ;4
         RET                 ;10
-        ;34(560=304+18+83+18+83+20+34)
+        ;34(560=304+18+83+18+83+20+34:534)
         
         
 Get:    ;309
@@ -184,11 +184,11 @@ Get:    ;309
         LD (Switch),A       ;13
         ;20
         
-        POP HL              ;10
-        POP AF              ;10
+        POP HL              ;10	EXX.4
+        POP AF              ;10	EX AF,AF'.4
         EI                  ;4
         RET                 ;10
-        ;34(455=309+18+34+40+20+34)
+        ;34(455=309+18+34+40+20+34:429)
 
 
 
