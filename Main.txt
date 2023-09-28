@@ -130,13 +130,10 @@ PcmAdrA:LD HL,0             ;10
         LD A,(HL)           ;7
         OUT ($FD),A         ;11 Dat.Put
         OR A                ;4
-        JP NZ,@F            ;10
-        NOP                 ;4
-        RLC A               ;8
-        JP SkipA            ;10
-@:      INC HL              ;6
+        JR Z,@F             ;7|12
+        INC HL              ;6
         LD (PcmAdrA+1),HL   ;16
-SkipA:  ;86
+@:      ;83|66
         
         LD A,(1<<5)         ;7  Cmd.Nop
         OUT ($FE),A         ;11
@@ -149,13 +146,10 @@ PcmAdrB:LD HL,0             ;10
         LD A,(HL)           ;7
         OUT ($FD),A         ;11 Dat.Put
         OR A                ;4
-        JP NZ,@F            ;10
-        NOP                 ;4
-        RLC A               ;8
-        JP SkipB            ;10
-@:      INC HL              ;6
+        JR Z,@F             ;10
+        INC HL              ;6
         LD (PcmAdrB+1),HL   ;16
-SkipB:  ;86
+@:      ;83|66
         
         LD A,Code_JR        ;7
         LD (Switch),A       ;13
@@ -165,7 +159,7 @@ SkipB:  ;86
         POP AF              ;10
         EI                  ;4
         RET                 ;10
-        ;34(566=304+18+86+18+86+20+34)
+        ;34(560=304+18+83+18+83+20+34)
         
         
 Get:    ;309
