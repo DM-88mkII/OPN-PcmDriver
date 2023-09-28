@@ -13,6 +13,14 @@ Decomp:
         DS $100             ;H
         DS $100             ;L
 
+LzcP:
+        align $100          ;
+        DS $100             ;n<<3
+
+LzcM:
+        align $100          ;
+        DS $100             ;n<<3
+
 CompP:
         align $100          ;
         DS $100             ;H
@@ -153,22 +161,50 @@ AddPcm:
         ADC HL,BC           ;15 HL = PcmX16 = PcmA16 + PcmB16
         EX DE,HL            ;4  DE = PcmX16
         JP M,Minus          ;10
-        ;37
+        ;37(92)
+        
 Plus:   
-        LD H,CompP>>8       ;7
+        LD H,LzcP>>8        ;7
+        LD A,D              ;4
+        AND A               ;4
+        JR NZ,LzcP_H        ;7|12
+LzcP_L: LD L,E              ;4  A = 0<<3
+        JP @F               ;10
+LzcP_H: LD A,8<<3           ;7
+        LD L,D              ;4
+@:      ADD A,(HL)          ;7
+        LD C,A              ;4  C = Exponent
+        ;47|49
+        
+        LD H,CompP>>8       ;7  Sign.0 | Frac
         LD L,D              ;4
         LD A,(HL)           ;7
         INC H               ;4
         LD L,E              ;4
         OR (HL)             ;7
+        OR C                ;4
         RET                 ;10
-        ;43(135)
+        ;47(186|188)
+        
 Minus:  
-        LD H,CompM>>8       ;7
+        LD H,LzcM>>8        ;7
+        LD A,D              ;4
+        INC A               ;4
+        JR NZ,LzcM_H        ;7|12
+LzcM_L: LD L,E              ;4  A = 0<<3
+        JP @F               ;10
+LzcM_H: LD A,8<<3           ;7
+        LD L,D              ;4
+@:      ADD A,(HL)          ;7
+        LD C,A              ;4  C = Exponent
+        ;47|49
+        
+        LD H,CompM>>8       ;7  Sign.1 | Frac
         LD L,D              ;4
         LD A,(HL)           ;7
         INC H               ;4
         LD L,E              ;4
         OR (HL)             ;7
+        OR C                ;7
         RET                 ;10
-        ;43(135)
+        ;47(186|188)
