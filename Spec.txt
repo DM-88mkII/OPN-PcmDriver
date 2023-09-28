@@ -1,22 +1,23 @@
 
 
 
-PCM Code
+PCMコード
      b7  b6  b5  b4  b3  b2  b1  b0
     +---+---+---+---+---+---+---+---+
-    |Sig|   Exponent    | Fraction* |
+    |Sig|   Exponent@   | Fraction* |
     +---+---+---+---+---+---+---+---+
-    *With hidden bits
+    @(Exponent > 0)? Exponent-1: Exponent
+    *(Exponent > 0)? 隠れビット在り: 隠れビット無し
 
-Special Code
-    $80 Level Zero
-    $00 Level Zero & Termination
+PCMコードの特殊コード
+    $80 出力レベル0
+    $00 出力レベル0 & 終端
 
-Constraints
-    PCM data is a multiple of 2
-    Placed at even addresses
+制約
+    PCMデータ数は2の倍数
+    PCMデータは偶数アドレスに配置
 
-At the end of an even number
+偶数個PCMデータの終端
     +0    +1
     +-----+-----+ +0
     |PCM.0|PCM.1|
@@ -25,10 +26,10 @@ At the end of an even number
     +-----+-----+ +4
     |  :  |  :  |
     +-----+-----+ +N
-    | $00 | $00 | Termination
+    | $00 | $00 | 終端
     +-----+-----+
 
-At the end of an odd number
+奇数個PCMデータの終端
     +0    +1
     +-----+-----+ +0
     |PCM.0|PCM.1|
@@ -39,7 +40,7 @@ At the end of an odd number
     +-----+-----+ +N
     |PCM.N| $80 |
     +-----+-----+ +N+2
-    | $00 | $00 | Termination
+    | $00 | $00 | 終端
     +-----+-----+
 
 
