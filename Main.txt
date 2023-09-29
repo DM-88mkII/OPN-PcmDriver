@@ -28,7 +28,7 @@ EnterPcmMode:
         CP %00000111        ;4  Sync.Signal.on
         JR NZ,@B            ;7|12
         
-        LD A,(1<<5)         ;7  Cmd.Nop
+        LD A,1<<5           ;7  Cmd.Nop
         OUT ($FE),A         ;11
 @:      
         IN A,($FE)          ;11
@@ -41,19 +41,18 @@ EnterPcmMode:
 
 
 Pcm1ch:
-        DI                  ;4
-        PUSH AF             ;11	EX AF,AF'.4
-        PUSH HL             ;11	EXX.4
+        EX AF,AF'           ;4
+        EXX                 ;4
+        
+        LD A,$FF            ;7
+        OUT ($E4),A         ;11
         
         LD A,$27            ;7
         OUT ($44),A         ;11
         JP @F               ;10
 @:      LD A,%00010101      ;7
         OUT ($45),A         ;11
-        
-        LD A,7              ;7
-        OUT ($E4),A         ;11
-        ;90
+        ;72
         
         
 PcmAdr: LD HL,0             ;10
@@ -77,27 +76,27 @@ PcmAdr: LD HL,0             ;10
         ;81
         
         
-        POP HL              ;10	EXX.4
-        POP AF              ;10	EX AF,AF'.4
-        EI                  ;4
+        EXX                 ;4
+        EX AF,AF'           ;4
         RET                 ;10
-        ;34(347:321)
+        ;18(313=72+50+11+81+81+18=)
 
 
 
 Pcm2ch:
-        DI                  ;4
-        PUSH AF             ;11	EX AF,AF'.4
-        PUSH HL             ;11	EXX.4
+        EX AF,AF'           ;4
+        EXX                 ;4
+        
+        LD A,$FF            ;7
+        OUT ($E4),A         ;11
         
         LD A,$27            ;7
         OUT ($44),A         ;11
         JP @F               ;10
 @:      LD A,%00010101      ;7
         OUT ($45),A         ;11
+        ;72
         
-        LD A,7              ;7
-        OUT ($E4),A         ;11
         
 BufAdr: LD A,(PcmBuf)       ;13
         LD HL,BufAdr+1      ;10
@@ -111,65 +110,66 @@ BufAdr: LD A,(PcmBuf)       ;13
         
         LD A,$48            ;7  OP2.TL
         CALL SetTL          ;17+57
-        ;297
+        ;207(279)
         
         
 Switch: JR Get              ;12 LD A,n;7
-        ;12|7(309|304)
+        ;12|7(291|286)
         
         
-Put:    ;304
-        LD A,(2<<5)         ;7  Cmd.Put
+Put:    ;286
+        DI                  ;4
+        LD A,2<<5           ;7  Cmd.Put
         OUT ($FE),A         ;11
-        ;18
+        ;22
+        
+        LD C,$FC            ;7
+        ;7(25)
         
 PcmAdrA:LD HL,0             ;10
-        LD A,(HL)           ;7
-        OUT ($FC),A         ;11 Dat.Put (28)
-        INC L               ;4
+        OUTI                ;16 Dat.Put (33)
         LD A,(HL)           ;7
         OUT ($FD),A         ;11 Dat.Put
         OR A                ;4
         JR Z,@F             ;7|12
-        INC HL              ;6
+        INC L               ;4
         LD (PcmAdrA+1),HL   ;16
-@:      ;83|66
+@:      ;75|60
         
-        LD A,(1<<5)         ;7  Cmd.Nop
+        LD A,1<<5           ;7  Cmd.Nop
         OUT ($FE),A         ;11
         ;18
         
 PcmAdrB:LD HL,0             ;10
-        LD A,(HL)           ;7
-        OUT ($FC),A         ;11 Dat.Put (28)
-        INC L               ;4
+        OUTI                ;16 Dat.Put (26)
         LD A,(HL)           ;7
         OUT ($FD),A         ;11 Dat.Put
         OR A                ;4
-        JR Z,@F             ;10
-        INC HL              ;6
+        JR Z,@F             ;7|12
+        INC L               ;4
         LD (PcmAdrB+1),HL   ;16
-@:      ;83|66
+@:      ;75|60
         
+        EI                  ;4
         LD A,Code_JR        ;7
         LD (Switch),A       ;13
-        ;20
+        ;24
         
-        POP HL              ;10	EXX.4
-        POP AF              ;10	EX AF,AF'.4
-        EI                  ;4
+        EXX                 ;4
+        EX AF,AF'           ;4
         RET                 ;10
-        ;34(560=304+18+83+18+83+20+34:534)
+        ;18(525=286+22+7+75+18+75+24+18=)
         
         
-Get:    ;309
-        LD A,(3<<5)         ;7  Cmd.Get
+Get:    ;291
+        DI                  ;4
+        LD A,3<<5           ;7  Cmd.Get
         OUT ($FE),A         ;11
-        ;18
+        ;22
         
         ;Wait.16-1 + 18
         LD HL,(BufAdr+1)    ;16
-        LD A,(1<<5)         ;7  Cmd.Nop
+        LD A,1<<5           ;7  Cmd.Nop
         OUT ($FE),A         ;11
         ;34
         
@@ -180,15 +180,15 @@ Get:    ;309
         LD (HL),A           ;7
         ;40
         
+        EI                  ;4
         LD A,Code_LD_A      ;7
         LD (Switch),A       ;13
-        ;20
+        ;24
         
-        POP HL              ;10	EXX.4
-        POP AF              ;10	EX AF,AF'.4
-        EI                  ;4
+        EXX                 ;4
+        EX AF,AF'           ;4
         RET                 ;10
-        ;34(455=309+18+34+40+20+34:429)
+        ;18(429=291+22+34+40+24+18=)
 
 
 
@@ -201,3 +201,115 @@ SetTL:
         NOP                 ;4
         RET                 ;10
         ;57
+
+
+
+IntVSync:
+        PUSH AF             ;11
+        PUSH HL             ;11
+        
+        LD A,$FF            ;7
+        OUT ($E4),A         ;11
+        
+        LD HL,Run           ;10
+        INC (HL)            ;7
+        
+        POP HL              ;10
+        POP AF              ;10
+        RET                 ;10
+        ;87
+
+
+
+PlayBgm:
+        PUSH AF             ;11
+        PUSH BC             ;11
+        PUSH DE             ;11
+        PUSH HL             ;11
+        PUSH IX             ;15
+        PUSH IY             ;15
+        EX AF,AF'           ;4
+        EXX                 ;4
+        PUSH AF             ;11
+        PUSH BC             ;11
+        PUSH DE             ;11
+        PUSH HL             ;11
+        
+        CALL Init           ;17
+        
+Polling:
+        IN A,($9)           ;11
+        RLCA                ;4  Cy = !StopKey
+        JR NC,@F            ;7|12
+        
+        XOR A               ;4  A = 0
+        LD HL,Run           ;10
+        OR (HL)             ;7
+        JR Z,Polling        ;7|12
+        
+        DEC (HL)            ;11
+        CALL Sequence       ;17 todo
+        CALL Send           ;17
+        JP Polling          ;10
+@:      
+        
+        CALL Term           ;17
+        
+        POP HL              ;10
+        POP DE              ;10
+        POP BC              ;10
+        POP AF              ;10
+        EXX                 ;4
+        EX AF,AF'           ;4
+        POP IY              ;14
+        POP IX              ;14
+        POP HL              ;10
+        POP DE              ;10
+        POP BC              ;10
+        POP AF              ;10
+        RET                 ;10
+        ;126
+
+
+
+Send:
+        LD C,$44            ;7
+        LD HL,SendBuf       ;10
+        ;17
+        
+FmNum:  LD A,0              ;7
+        ADD A,A             ;4
+        JR Z,FmSkip         ;7|12
+        LD B,A              ;4
+        ;22
+@:      DI                  ;4
+        OUTI                ;16
+        INC C               ;4
+        OUTI                ;16
+        DEC C               ;4
+        EI                  ;4
+        DJNZ @B             ;8|13
+FmSkip: ;81
+        
+SsgNum: LD A,0              ;7
+        ADD A,A             ;4
+        JR Z,SsgSkip        ;7|12
+        LD B,A              ;4
+        ;22
+@:      DI                  ;4
+        OUTI                ;16
+        INC C               ;4
+        OUTI                ;16
+        DEC C               ;4
+        EI                  ;4
+        DJNZ @B             ;8|13
+SsgSkip:;61
+        
+        RET                 ;10
+
+
+SendBuf:
+        DS $200             ;
+
+Run:
+        DB 0                ;

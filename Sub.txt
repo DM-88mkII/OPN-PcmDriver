@@ -48,14 +48,14 @@ PcmMode:
 @:      
         IN A,($FE)          ;11
         AND $0F             ;7
-        CP (1<<1)           ;7  Cmd.Nop
+        CP 1<<1             ;7  Cmd.Nop
         JR NZ,@B            ;7|12
         
         XOR A               ;4  Signal.off  %0000....
         OUT ($FE),A         ;12
 @:      
         IN A,($FE)          ;11
-        CP (1<<1)           ;7  Cmd.Nop
+        CP 1<<1             ;7  Cmd.Nop
         JR NZ,@B            ;7|12
         
 Polling:
@@ -79,10 +79,10 @@ Exit:
 
 
 Put:    ;16+16-1
-        ;Wait.(12=28-16)
-        RLC A               ;8
-        NOP                 ;4
-        ;12
+        ;Wait.(17=33-16)
+        JP @F               ;10
+@:      LD A,0              ;7
+        ;17
         
         IN A,($FD)          ;11 Get.Dat
         LD (PcmA1+1),A      ;13
@@ -91,22 +91,21 @@ Put:    ;16+16-1
         JP @F               ;10
 @:      JP @F               ;10
 @:      LD A,0              ;7
-        RLC A               ;8
-        ;83
+        ;75
         
-        ;Wait.18 + 28
+        ;Wait.18 + 26
         JP @F               ;10
 @:      RLC A               ;8
         JP @F               ;10
-@:      JP @F               ;10
 @:      RLC A               ;8
-        ;46
+        RLC A               ;8
+        ;44
         
         IN A,($FD)          ;11 Get.Dat
         LD (PcmB1+1),A      ;13
         IN A,($FC)          ;11 Get.Dat
         LD (PcmB2+1),A      ;13
-        ;48(189=12+83+46+48)
+        ;48(184=17+75+44+48=)
         
         
 PcmA1:  LD B,0              ;7
