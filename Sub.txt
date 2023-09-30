@@ -1,12 +1,14 @@
 
 
 
-Cmd:
-        align $100
-Cmd0:   DW Exit             ;Return BIOS
-Cmd1:   DW Nop              ;
-Cmd2:   DW Put              ;
-Cmd3:   DW Get              ;
+Cmd:    align $100
+Cmd0:   JP Exit             ;10 Return BIOS
+        align $4
+Cmd1:   JP Nop              ;10
+        align $4
+Cmd2:   JP Put              ;10
+        align $4
+Cmd3:   JP Get              ;10
 
 Decomp:
         align $100          ;
@@ -48,14 +50,14 @@ PcmMode:
 @:      
         IN A,($FE)          ;11
         AND $0F             ;7
-        CP 1<<1             ;7  Cmd.Nop
+        CP 1<<2             ;7  Cmd.Nop
         JR NZ,@B            ;7|12
         
         XOR A               ;4  Signal.off  %0000....
         OUT ($FE),A         ;12
 @:      
         IN A,($FE)          ;11
-        CP 1<<1             ;7  Cmd.Nop
+        CP 1<<2             ;7  Cmd.Nop
         JR NZ,@B            ;7|12
         
 Polling:
@@ -63,8 +65,8 @@ Polling:
         LD C,$FE            ;7
 Nop:    
         IN L,(C)            ;12
-        JP (HL)             ;4
-        ;16+16-1
+        JP (HL)             ;4+10
+        ;26+26-1
         
 Exit:   
         POP AF              ;10
@@ -78,11 +80,10 @@ Exit:
 
 
 
-Put:    ;16+16-1
-        ;Wait.(17=33-16)
-        JP @F               ;10
-@:      LD A,0              ;7
-        ;17
+Put:    ;26+26-1
+        ;Wait.(35-26=9)
+        LD A,I              ;9
+        ;9
         
         IN A,($FD)          ;11 Get.Dat
         LD (PcmA1+1),A      ;13
@@ -93,19 +94,19 @@ Put:    ;16+16-1
 @:      LD A,0              ;7
         ;75
         
-        ;Wait.18 + 26
+        ;Wait.18 + 28
         JP @F               ;10
-@:      RLC A               ;8
-        JP @F               ;10
+@:      JP @F               ;10
+@:      JP @F               ;10
 @:      RLC A               ;8
         RLC A               ;8
-        ;44
+        ;46
         
         IN A,($FD)          ;11 Get.Dat
         LD (PcmB1+1),A      ;13
         IN A,($FC)          ;11 Get.Dat
         LD (PcmB2+1),A      ;13
-        ;48(184=17+75+44+48=)
+        ;48(9+75+46+48=178)
         
         
 PcmA1:  LD B,0              ;7
@@ -116,7 +117,7 @@ PcmB1:  LD C,0              ;7
 
 
 
-Get:    ;16+16-1
+Get:    ;26+26-1
 PcmX1:  LD A,0              ;7
         OUT ($FC),A         ;11 Dat.Put (18)
 PcmX2:  LD A,0              ;7

@@ -28,7 +28,7 @@ EnterPcmMode:
         CP %00000111        ;4  Sync.Signal.on
         JR NZ,@B            ;7|12
         
-        LD A,1<<5           ;7  Cmd.Nop
+        LD A,1<<6           ;7  Cmd.Nop
         OUT ($FE),A         ;11
 @:      
         IN A,($FE)          ;11
@@ -79,7 +79,7 @@ PcmAdr: LD HL,0             ;10
         EXX                 ;4
         EX AF,AF'           ;4
         RET                 ;10
-        ;18(313=72+50+11+81+81+18=)
+        ;18(72+50+11+81+81+18=313)
 
 
 
@@ -119,36 +119,36 @@ Switch: JR Get              ;12 LD A,n;7
         
 Put:    ;286
         DI                  ;4
-        LD A,2<<5           ;7  Cmd.Put
+        LD A,2<<6           ;7  Cmd.Put
         OUT ($FE),A         ;11
         ;22
         
-        LD C,$FC            ;7
+        LD C,$FD            ;7
         ;7(25)
         
 PcmAdrA:LD HL,0             ;10
-        OUTI                ;16 Dat.Put (33)
         LD A,(HL)           ;7
-        OUT ($FD),A         ;11 Dat.Put
+        OUT ($FC),A         ;11 Dat.Put (35)
+        INC L               ;4
+        OUTI                ;16 Dat.Put
         OR A                ;4
         JR Z,@F             ;7|12
-        INC L               ;4
         LD (PcmAdrA+1),HL   ;16
-@:      ;75|60
+@:      ;75|64
         
-        LD A,1<<5           ;7  Cmd.Nop
+        LD A,1<<6           ;7  Cmd.Nop
         OUT ($FE),A         ;11
         ;18
         
 PcmAdrB:LD HL,0             ;10
-        OUTI                ;16 Dat.Put (26)
         LD A,(HL)           ;7
-        OUT ($FD),A         ;11 Dat.Put
+        OUT ($FC),A         ;11 Dat.Put (28)
+        INC L               ;4
+        OUTI                ;16 Dat.Put
         OR A                ;4
         JR Z,@F             ;7|12
-        INC L               ;4
         LD (PcmAdrB+1),HL   ;16
-@:      ;75|60
+@:      ;75|64
         
         EI                  ;4
         LD A,Code_JR        ;7
@@ -158,20 +158,21 @@ PcmAdrB:LD HL,0             ;10
         EXX                 ;4
         EX AF,AF'           ;4
         RET                 ;10
-        ;18(525=286+22+7+75+18+75+24+18=)
+        ;18(286+22+7+75+18+75+24+18=525)
         
         
 Get:    ;291
         DI                  ;4
-        LD A,3<<5           ;7  Cmd.Get
+        LD A,3<<6           ;7  Cmd.Get
         OUT ($FE),A         ;11
         ;22
         
-        ;Wait.16-1 + 18
+        ;Wait.26-1 + 18
+        LD A,I              ;9
         LD HL,(BufAdr+1)    ;16
-        LD A,1<<5           ;7  Cmd.Nop
+        LD A,1<<6           ;7  Cmd.Nop
         OUT ($FE),A         ;11
-        ;34
+        ;43
         
         IN A,($FD)          ;11 Dat.Get
         LD (HL),A           ;7
@@ -188,7 +189,7 @@ Get:    ;291
         EXX                 ;4
         EX AF,AF'           ;4
         RET                 ;10
-        ;18(429=291+22+34+40+24+18=)
+        ;18(291+22+43+40+24+18=438)
 
 
 
